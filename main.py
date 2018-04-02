@@ -3,6 +3,7 @@ from logging import (
     getLogger,
     DEBUG)
 import tkinter as tk
+from json import load
 
 logger = getLogger("TicTacToe")
 logger.setLevel(DEBUG)
@@ -21,6 +22,10 @@ if __name__ == "__main__":
     root.geometry("100x100+0+0")
     root.columnconfigure(0, weight=1)
     root.rowconfigure(1, weight=1)
-    app = App(root)
+    with open("config.json") as f:
+        loaded = load(f)
+    userStarts = bool(loaded["userStarts"])
+    difficulty = int(loaded["difficulty1to8"])
+    app = App(root, )
     app.grid(column=0, row=0)
     root.mainloop()
