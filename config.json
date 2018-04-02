@@ -1,2 +1,3 @@
-{"userStarts": true,
- "difficulty1to8": 1}
+{"userStarts": false,
+ "difficulty1to8": 8,
+ "fontSize": 80}
