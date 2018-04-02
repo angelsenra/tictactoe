@@ -121,7 +121,7 @@ if __name__ == "__main__":
     root.rowconfigure(1, weight=1)
     with open("config.json") as f:
         loaded = load(f)
-    userStarts = bool(loaded["userStarts"])
+    userStarts = bool(loaded["userAlwaysStarts"])
     difficulty = int(loaded["difficulty1to8"])
     fontSize = int(loaded["fontSize"])
     app = App(root, userStarts, difficulty, fontSize)
