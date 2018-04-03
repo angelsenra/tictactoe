@@ -117,8 +117,6 @@ if __name__ == "__main__":
     root.iconbitmap(default="icon.ico")
     root.geometry("300x300+0+0")
     root.aspect(1, 1, 1, 1)  # Not working or not supported by my PC (?)
-    root.columnconfigure(0, weight=1)
-    root.rowconfigure(1, weight=1)
     with open("config.json") as f:
         loaded = load(f)
     userStarts = bool(loaded["userAlwaysStarts"])
