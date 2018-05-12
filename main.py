@@ -59,7 +59,7 @@ class App(tk.Frame):
         self.font = ("Arial", fontSize, "bold")
         self.buttons = []
         for a in range(9):
-            button = tk.Button(command=self.press(a), font=self.font)
+            button = tk.Button(self, command=self.press(a), font=self.font)
             button.place(relx=a % 3 / 3, rely=a // 3 / 3, relwidth=1 / 3,
                          relheight=1 / 3, anchor="nw")
             self.buttons.append(button)
@@ -122,6 +122,8 @@ if __name__ == "__main__":
     userStarts = bool(loaded["userAlwaysStarts"])
     difficulty = int(loaded["difficulty1to8"])
     fontSize = int(loaded["fontSize"])
+    root.columnconfigure(0, weight=1)
+    root.rowconfigure(0, weight=1)
     app = App(root, userStarts, difficulty, fontSize)
-    app.grid(column=0, row=0)
+    app.grid(column=0, row=0, sticky="NSEW")
     root.mainloop()
