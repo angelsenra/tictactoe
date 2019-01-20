@@ -1,13 +1,15 @@
 #! python3
-from logging import (
-    getLogger,
-    DEBUG)
+import logging
 import tkinter as tk
-from tkinter import messagebox
-from json import load
+import tkinter.messagebox
 
-logger = getLogger("TicTacToe")
-logger.setLevel(DEBUG)
+import ai
+
+FORMAT = "[%(asctime)s] [%(levelname)-8s] %(name)-4s: %(message)s"
+DATEFMT = "%Y-%m-%d %H:%M:%S"
+logging.basicConfig(level=logging.DEBUG, format=FORMAT, datefmt=DATEFMT)
+logger = logging.getLogger("main")
+logger.setLevel(logging.DEBUG)
 
 V0 = " "
 P1 = "X"
@@ -16,113 +18,87 @@ BUTTON_STYLE = {"bg": "#F0F0F0", "activebackground": "#F0F0F0", "bd": 7,
                 "relief": "ridge", "overrelief": "groove", "text": V0}
 CLICKED_STYLE = {"fg": "#FFF", "activeforeground": "#000",
                  "overrelief": "ridge"}
-WINNING_ROWS = ((0, 1, 2), (3, 4, 5), (6, 7, 8),
-                (0, 3, 6), (1, 4, 7), (2, 5, 8),
-                (0, 4, 8), (2, 4, 6))
+P2_STYLE = {**CLICKED_STYLE, "text": P2,
+            "bg": "#00F", "activebackground": "#00F"}
+P1_STYLE = {**CLICKED_STYLE, "text": P1,
+            "bg": "#F00", "activebackground": "#F00"}
 
-
-def winner(board):
-    for row in WINNING_ROWS:
-        first = board[row[0]]
-        if not first:
-            continue
-        if first == board[row[1]] == board[row[2]]:
-            return first
-    return 0
-
-
-def minimax(board, userTurn, depth):
-    whoWon = winner(board)
-    if whoWon == 2:
-        return (15 - depth, None)
-    elif whoWon == 1:
-        return (-15 - depth, None)
-    elif 0 not in board or depth < 1:
-        return (0, None)
-    values = []
-    number, function = (1, min) if userTurn else (2, max)
-    for a in range(9):
-        if board[a]:
-            continue
-        testBoard = board[:]
-        testBoard[a] = number
-        values.append((minimax(testBoard, not userTurn, depth - 1)[0], a))
-    return function(values)
+# Config:
+RESOLUTION = (400, 400)
+FONT = ("Arial", 100, "bold")
+USER_STARTS = False  # If False the loser will start
+DIFFICULTY = ai.MINIMAX
 
 
 class App(tk.Frame):
-    def __init__(self, master, userStarts, difficulty, fontSize):
+    def __init__(self, master):
         tk.Frame.__init__(self, master)
-        self.userStarts = userStarts  # If False the loser will start
-        self.userTurn = self.userStarts
-        self.difficulty = difficulty
-        self.font = ("Arial", fontSize, "bold")
+        self.userTurn = USER_STARTS
         self.buttons = []
-        for a in range(9):
-            button = tk.Button(self, command=self.press(a), font=self.font)
-            button.place(relx=a % 3 / 3, rely=a // 3 / 3, relwidth=1 / 3,
+        for i in range(9):
+            button = tk.Button(self, command=self.press(i), font=FONT)
+            button.place(relx=i % 3 / 3, rely=i // 3 / 3, relwidth=1 / 3,
                          relheight=1 / 3, anchor="nw")
             self.buttons.append(button)
-        self.new()
+        self.new_game()
 
-    def new(self):
-        if self.userStarts:
+    def new_game(self):
+        if USER_STARTS:
             self.userTurn = True
-        self.board = [0] * 9
+        self.board = ai.EMPTY.copy()
         for button in self.buttons:
             button.config(**BUTTON_STYLE)
-        self.after_press()
+        self.refresh()
+
+    def move(self, button):
+        human = self.userTurn
+        self.buttons[button].config(**(P1_STYLE if human else P2_STYLE))
+        self.board[button] = ai.HUMAN if human else ai.AI
+
+        self.userTurn = not self.userTurn
+        self.refresh()
 
     def ai_move(self):
-        if not self.board[4]:
-            button = 4
-        else:
-            button = minimax(self.board, False, self.difficulty)[1]
-        if button is None or self.board[button]:
-            logger.error("AI could not move.")
-            return
-        kw = {"text": P2, "bg": "#00F", "activebackground": "#00F"}
-        self.buttons[button].config(**CLICKED_STYLE, **kw)
-        self.board[button] = 2
-        self.userTurn = True
-        self.after_press()
+        button = ai.move(self.board, False, DIFFICULTY)
+        logger.info(f"AI chose {button}")
+        self.move(button)
 
     def press(self, button):
         def wrapper():
-            if not self.userTurn:
-                logger.error("It is not your turn yet.")
-                return
-            if self.board[button]:
-                logger.error("Could not choose that button.")
-                return
-            kw = {"text": P1, "bg": "#F00", "activebackground": "#F00"}
-            self.buttons[button].config(**CLICKED_STYLE, **kw)
-            self.board[button] = 1
-            self.userTurn = False
-            self.after_press()
+            if ai.winner(self.board) or all(self.board):
+                logger.error("The game is over")
+                self.refresh()
+            elif not self.userTurn:
+                logger.error("It is not your turn yet")
+            elif self.board[button]:
+                logger.error("Could not choose that button")
+            else:
+                logger.info(f"You chose {button}")
+                self.move(button)
         return wrapper
 
-    def after_press(self):
-        if winner(self.board) or 0 not in self.board:
-            if messagebox.askyesno("Replay", "Play Again?"):
-                self.new()
-        if not self.userTurn:
+    def refresh(self):
+        if ai.winner(self.board) or all(self.board):
+            if tkinter.messagebox.askyesno("Replay", "Play Again?"):
+                self.new_game()
+        elif not self.userTurn:
             self.ai_move()
 
 
 if __name__ == "__main__":
+    ai.preload_minimax()
+    # Root window
     root = tk.Tk()
     root.title("Tic Tac Toe")
     root.config(bg="white")
-    root.iconbitmap(default="icon.ico")
-    root.minsize(300, 300)
+    # Setting icon and resolution
+    img = tk.Image("photo", file="icon.gif")
+    root.tk.call("wm", "iconphoto", root._w, img)
+    root.minsize(*RESOLUTION)
+    # Root grid config
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
-    with open("config.json") as f:
-        loaded = load(f)
-    userStarts = bool(loaded["userAlwaysStarts"])
-    difficulty = int(loaded["difficulty1to8"])
-    fontSize = int(loaded["fontSize"])
-    app = App(root, userStarts, difficulty, fontSize)
+    # Creating App
+    app = App(root)
     app.grid(column=0, row=0, sticky="NSEW")
     root.mainloop()

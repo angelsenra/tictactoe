@@ -1,8 +1,7 @@
 #! python3
+import logging
 import random
 import time
-import logging
-import functools
 
 import numpy as np
 
@@ -59,8 +58,8 @@ def minimax(board, userTurn, depth):
     elif all(board) or not depth:
         return (0, None)
     add, function = TURN_HUMAN if userTurn else TURN_AI
-    return function((minimax(board + add[a], not userTurn, depth - 1)[0], a)
-                    for a in range(9) if not board[a])
+    return function((minimax(board + add[i], not userTurn, depth - 1)[0], i)
+                    for i in range(9) if not board[i])
 
 
 def preload_minimax():
@@ -70,7 +69,6 @@ def preload_minimax():
     for i in TURN_HUMAN[0]:
         minimax(i, False, 9)
     logger.info(f"Took {time.time() * 1000 - initialTime} ms")
-    print(len(minimax.cache))
 
 
 def move(board, userTurn, difficulty):
